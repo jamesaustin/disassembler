@@ -37,7 +37,6 @@ TEST_JSON = {
     'null': None
 }
 
-
 def json_debug(j, args):
     output = []
     def _output(line):
