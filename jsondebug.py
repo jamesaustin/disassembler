@@ -114,6 +114,9 @@ def json_debug(j, args):
             exit()
 
     def _info(path, count=0, value=None, key=None):
+        if not args.paths and not args.counts:
+            return ''
+
         if not value:
             if args.paths:
                 return ' # {}'.format(path)
@@ -131,13 +134,6 @@ def json_debug(j, args):
             return ' # {}<{}>'.format(key_str, count)
         else:
             return ' # {}<{} of {}>'.format(key_str, count, len(value))
-
-        path_str = ' {}'.format(path) if args.paths else ''
-        key_str = '"{}": '.format(key) if key else ''
-        if not value and not args.paths:
-            return ''
-        if not value:
-            return ' #{}'.format(path_str)
 
     def _basic_list(j):
         basic = []
@@ -210,6 +206,7 @@ def parse_args():
     group.add_argument('--dict', type=int, default=DEFAULT_DICT_ELEMENTS, help='Num dict entries to display')
     group.add_argument('--list', type=int, default=DEFAULT_LIST_ELEMENTS, help='Num list entries to display')
     group.add_argument('--paths', action='store_true', help='Output item paths')
+    group.add_argument('--counts', action='store_true', help='Output item counts')
     group.add_argument('--path', type=str, default=DEFAULT_PATH, help='File pattern selection of elements to display')
     group = parser.add_argument_group('debugging options')
     group.add_argument('--verbose', '-v', action='store_true')
