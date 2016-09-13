@@ -113,15 +113,31 @@ def json_debug(j, args):
             LOG.error('Unsupported type: {}'.format(type(j)))
             exit()
 
-    def _metrics(count, value, key=None):
-        if key:
-            key_str = '"{}": '.format(key)
+    def _info(path, count=0, value=None, key=None):
+        if not value:
+            if args.paths:
+                return ' # {}'.format(path)
+            else:
+                return ''
+
+        if args.paths:
+            key_str = '{}:'.format(path)
+        elif key:
+            key_str = '"{}":'.format(key)
         else:
             key_str = ''
+
         if count == len(value):
-            return ' # {}{}'.format(key_str, count)
+            return ' # {}<{}>'.format(key_str, count)
         else:
-            return ' # {}{} of {}'.format(key_str, count, len(value))
+            return ' # {}<{} of {}>'.format(key_str, count, len(value))
+
+        path_str = ' {}'.format(path) if args.paths else ''
+        key_str = '"{}": '.format(key) if key else ''
+        if not value and not args.paths:
+            return ''
+        if not value:
+            return ' #{}'.format(path_str)
 
     def _basic_list(j):
         basic = []
@@ -156,24 +172,24 @@ def json_debug(j, args):
             render_fn = _output if _path_hit(this_path, v) else _null
             if isinstance(v, dict):
                 if not _depth_test(current_depth):
-                    render_fn('{}{{ ... }}{}{}'.format(prefix, comma, _metrics(0, v)))
+                    render_fn('{}{{ ... }}{}{}'.format(prefix, comma, _info(this_path, 0, v)))
                 elif len(v) == 0:
-                    render_fn('{}{{}}{}{}'.format(prefix, comma, _metrics(0, v, k)))
+                    render_fn('{}{{}}{}{}'.format(prefix, comma, _info(this_path, 0, v, k)))
                 else:
                     render_fn('{}{{'.format(prefix))
                     count = _recurse(v, current_depth, this_path)
-                    render_fn('{}}}{}{}'.format(indent, comma, _metrics(count, v, k)))
+                    render_fn('{}}}{}{}'.format(indent, comma, _info(this_path, count, v, k)))
             elif isinstance(v, list):
                 if not _depth_test(current_depth):
-                    render_fn('{}[ ... ]{}{}'.format(prefix, comma, _metrics(0, v)))
+                    render_fn('{}[ ... ]{}{}'.format(prefix, comma, _info(this_path, 0, v)))
                 elif any(isinstance(x, (dict, list)) for x in v):
                     render_fn('{}['.format(prefix))
                     count = _recurse(v, current_depth, this_path)
-                    render_fn('{}]{}{}'.format(indent, comma, _metrics(count, v, k)))
+                    render_fn('{}]{}{}'.format(indent, comma, _info(this_path, count, v, k)))
                 else:
-                    render_fn('{}[{}]{}'.format(prefix, _basic_list(v), comma))
+                    render_fn('{}[{}]{}{}'.format(prefix, _basic_list(v), comma, _info(this_path)))
             else:
-                render_fn('{}{}{}'.format(prefix, _item(v), comma))
+                render_fn('{}{}{}{}'.format(prefix, _item(v), comma, _info(this_path)))
         return c
 
     if isinstance(j, (dict, list)):
@@ -193,6 +209,7 @@ def parse_args():
     group.add_argument('--depth', type=int, default=DEFAULT_DEPTH, help='Depth to recurse')
     group.add_argument('--dict', type=int, default=DEFAULT_DICT_ELEMENTS, help='Num dict entries to display')
     group.add_argument('--list', type=int, default=DEFAULT_LIST_ELEMENTS, help='Num list entries to display')
+    group.add_argument('--paths', action='store_true', help='Output item paths')
     group.add_argument('--path', type=str, default=DEFAULT_PATH, help='File pattern selection of elements to display')
     group = parser.add_argument_group('debugging options')
     group.add_argument('--verbose', '-v', action='store_true')
