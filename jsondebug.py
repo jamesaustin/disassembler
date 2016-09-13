@@ -43,7 +43,7 @@ def json_debug(j, args):
     output = []
     def _output(*parts):
         output.append(''.join(parts))
-    def _null(_):
+    def _null(*_):
         pass
 
     def _path_hit(this_path, child):
