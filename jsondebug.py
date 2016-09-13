@@ -41,8 +41,8 @@ TEST_JSON = {
 
 def json_debug(j, args):
     output = []
-    def _output(line):
-        output.append(line)
+    def _output(*parts):
+        output.append(''.join(parts))
     def _null(_):
         pass
 
@@ -170,28 +170,28 @@ def json_debug(j, args):
             comma = '' if n == no_comma_at else comma
             render_fn = _output if _path_hit(this_path, v) else _null
             if n > 0 and n != previous_n + 1:
-                render_fn('{}...'.format(indent))
+                render_fn(indent, '...')
             previous_n = n
             if isinstance(v, dict):
                 if not _depth_test(current_depth):
-                    render_fn('{}{{ ... }}{}{}'.format(prefix, comma, _info(this_path, 0, v)))
+                    render_fn(prefix, '{ ... }', comma, _info(this_path, 0, v))
                 elif len(v) == 0:
-                    render_fn('{}{{}}{}{}'.format(prefix, comma, _info(this_path, 0, v, k)))
+                    render_fn(prefix, '{}', comma, _info(this_path, 0, v, k))
                 else:
-                    render_fn('{}{{'.format(prefix))
+                    render_fn(prefix, '{')
                     count = _recurse(v, current_depth, this_path)
-                    render_fn('{}}}{}{}'.format(indent, comma, _info(this_path, count, v, k)))
+                    render_fn(indent, '}', comma, _info(this_path, count, v, k))
             elif isinstance(v, list):
                 if not _depth_test(current_depth):
-                    render_fn('{}[ ... ]{}{}'.format(prefix, comma, _info(this_path, 0, v)))
+                    render_fn(prefix, '[ ... ]', comma, _info(this_path, 0, v))
                 elif any(isinstance(x, (dict, list)) for x in v):
-                    render_fn('{}['.format(prefix))
+                    render_fn(prefix, '[')
                     count = _recurse(v, current_depth, this_path)
-                    render_fn('{}]{}{}'.format(indent, comma, _info(this_path, count, v, k)))
+                    render_fn(indent, ']', comma, _info(this_path, count, v, k))
                 else:
-                    render_fn('{}[{}]{}{}'.format(prefix, _basic_list(v), comma, _info(this_path)))
+                    render_fn(prefix, '[', _basic_list(v), ']', comma, _info(this_path))
             else:
-                render_fn('{}{}{}{}'.format(prefix, _item(v), comma, _info(this_path)))
+                render_fn(prefix, _item(v), comma, _info(this_path))
         return c
 
     if isinstance(j, (dict, list)):
