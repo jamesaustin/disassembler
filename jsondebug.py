@@ -66,34 +66,37 @@ def json_debug(j, args):
     def _depth_test(depth):
         return args.all or args.depth == 0 or depth <= args.depth
 
-    def _culled_dict(j):
-        keys = sorted(j.keys())
-        if _dict_test(keys):
-            for n, k in enumerate(keys):
-                yield n, k, j[k]
+    def _culled(j):
+        if isinstance(j, dict):
+            keys = sorted(j.keys())
+            if _dict_test(keys):
+                for n, k in enumerate(keys):
+                    yield n, k, j[k]
+            else:
+                n = 0
+                for k in keys[:args.dict]:
+                    yield n, k, j[k]
+                    n += 1
+                n = len(keys) - args.dict
+                for k in keys[-args.dict:]:
+                    yield n, k, j[k]
+                    n += 1
+        elif isinstance(j, list):
+            if _list_test(j):
+                for n, v in enumerate(j):
+                    yield n, None, v
+            else:
+                n = 0
+                for v in j[:args.list]:
+                    yield n, None, v
+                    n += 1
+                n = len(j) - args.list
+                for v in j[-args.list:]:
+                    yield n, None, v
+                    n += 1
         else:
-            n = 0
-            for k in keys[:args.dict]:
-                yield n, k, j[k]
-                n += 1
-            n = len(keys) - args.dict
-            for k in keys[-args.dict:]:
-                yield n, k, j[k]
-                n += 1
-
-    def _culled_list(j):
-        if _list_test(j):
-            for n, v in enumerate(j):
-                yield n, v
-        else:
-            n = 0
-            for v in j[:args.list]:
-                yield n, v
-                n += 1
-            n = len(j) - args.list
-            for v in j[-args.list:]:
-                yield n, v
-                n += 1
+            LOG.error('Unsupported type: {}'.format(type(j)))
+            exit()
 
     def _item(j):
         if j is None:
@@ -122,7 +125,7 @@ def json_debug(j, args):
         basic = []
         comma, no_comma_at = ', ', len(j) - 1
         previous_n = 0
-        for n, v in _culled_list(j):
+        for n, _, v in _culled(j):
             if n > 0 and n != previous_n + 1:
                 basic.append('... ')
             previous_n = n
@@ -135,7 +138,7 @@ def json_debug(j, args):
         current_depth += 1
         comma, no_comma_at = ',', len(j) - 1
         previous_n = 0
-        for c, (n, k, v) in enumerate(_culled_dict(j)):
+        for c, (n, k, v) in enumerate(_culled(j)):
             if n > 0 and n != previous_n + 1:
                 render_fn('{}...'.format(indent))
             previous_n = n
@@ -167,7 +170,7 @@ def json_debug(j, args):
         current_depth += 1
         comma, no_comma_at = ',', len(j) - 1
         previous_n = 0
-        for c, (n, v) in enumerate(_culled_list(j)):
+        for c, (n, _, v) in enumerate(_culled(j)):
             if n > 0 and n != previous_n + 1:
                 render_fn('{}...'.format(indent))
             previous_n = n
@@ -194,9 +197,7 @@ def json_debug(j, args):
                 render_fn('{}{}{}'.format(indent, _item(v), comma))
         return c + 1
 
-    if isinstance(j, dict):
-        _recurse_list([j])
-    elif isinstance(j, list):
+    if isinstance(j, (dict, list)):
         _recurse_list([j])
     else:
         _output(_item(j))
