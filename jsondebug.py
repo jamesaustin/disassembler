@@ -18,6 +18,7 @@ PYTHON_TYPES = False
 TRUE_STR, FALSE_STR, NULL_STR = ('True', 'False', 'None') if PYTHON_TYPES else ('true', 'false', 'none')
 
 TEST_JSON = {
+    'list': [],
     'listInt': list(range(100)),
     'listFloat': [1.0 / (x + 1) for x in range(100)],
     'listStr': [str(x) for x in range(100)],
@@ -26,7 +27,8 @@ TEST_JSON = {
     'listDict': [{str(x): x} for x in range(100)],
     'listList': [list(range(10)) for x in range(100)],
     'listListListList': [[[[None]]]],
-    'dict': {str(x): x for x in range(100)},
+    'dict': {},
+    'dictStr': {str(x): x for x in range(100)},
     'dictDict': {str(x): {str(x): x} for x in range(100)},
     'dictDictDictDict': {'a': {'b': {'c': {'d': 'e'}}}},
     'int': 1,
@@ -113,13 +115,13 @@ def json_debug(j, args):
 
     def _metrics(count, value, key=None):
         if key:
-            key_str = ' from "{}"'.format(key)
+            key_str = '"{}": '.format(key)
         else:
             key_str = ''
         if count == len(value):
-            return ' # {}{}'.format(count, key_str)
+            return ' # {}{}'.format(key_str, count)
         else:
-            return ' # {} of {}{}'.format(count, len(value), key_str)
+            return ' # {}{} of {}'.format(key_str, count, len(value))
 
     def _basic_list(j):
         basic = []
@@ -133,72 +135,49 @@ def json_debug(j, args):
             basic.append('{}{}'.format(_item(v), comma))
         return ''.join(basic)
 
-    def _recurse_dict(j, current_depth=0, path='/'):
+    def _recurse(j, current_depth=0, path='/'):
         indent = ' ' * (current_depth * args.indent)
         current_depth += 1
         comma, no_comma_at = ',', len(j) - 1
         previous_n = 0
-        for c, (n, k, v) in enumerate(_culled(j)):
+        c = 0
+        for n, k, v in _culled(j):
+            c += 1
             if n > 0 and n != previous_n + 1:
                 render_fn('{}...'.format(indent))
             previous_n = n
+            if k:
+                prefix = '{}"{}": '.format(indent, k)
+                this_path = path_join(path, k)
+            else:
+                prefix = '{}'.format(indent)
+                this_path = path_join(path, str(n))
             comma = '' if n == no_comma_at else comma
-            this_path = path_join(path, k)
             render_fn = _output if _path_hit(this_path, v) else _null
             if isinstance(v, dict):
                 if not _depth_test(current_depth):
-                    render_fn('{}"{}": {{ ... }}{}{}'.format(indent, k, comma, _metrics(0, v)))
+                    render_fn('{}{{ ... }}{}{}'.format(prefix, comma, _metrics(0, v)))
+                elif len(v) == 0:
+                    render_fn('{}{{}}{}{}'.format(prefix, comma, _metrics(0, v, k)))
                 else:
-                    render_fn('{}"{}": {{'.format(indent, k))
-                    count = _recurse_dict(v, current_depth, this_path)
+                    render_fn('{}{{'.format(prefix))
+                    count = _recurse(v, current_depth, this_path)
                     render_fn('{}}}{}{}'.format(indent, comma, _metrics(count, v, k)))
             elif isinstance(v, list):
                 if not _depth_test(current_depth):
-                    render_fn('{}"{}": [ ... ]{}{}'.format(indent, k, comma, _metrics(0, v)))
+                    render_fn('{}[ ... ]{}{}'.format(prefix, comma, _metrics(0, v)))
                 elif any(isinstance(x, (dict, list)) for x in v):
-                    render_fn('{}"{}": ['.format(indent, k))
-                    count = _recurse_list(v, current_depth, this_path)
+                    render_fn('{}['.format(prefix))
+                    count = _recurse(v, current_depth, this_path)
                     render_fn('{}]{}{}'.format(indent, comma, _metrics(count, v, k)))
                 else:
-                    render_fn('{}"{}": [{}]{}'.format(indent, k, _basic_list(v), comma))
+                    render_fn('{}[{}]{}'.format(prefix, _basic_list(v), comma))
             else:
-                render_fn('{}"{}": {}{}'.format(indent, k, _item(v), comma))
-        return c + 1
-
-    def _recurse_list(j, current_depth=0, path='/'):
-        indent = ' ' * (current_depth * args.indent)
-        current_depth += 1
-        comma, no_comma_at = ',', len(j) - 1
-        previous_n = 0
-        for c, (n, _, v) in enumerate(_culled(j)):
-            if n > 0 and n != previous_n + 1:
-                render_fn('{}...'.format(indent))
-            previous_n = n
-            comma = '' if n == no_comma_at else comma
-            this_path = path_join(path, str(n))
-            render_fn = _output if _path_hit(this_path, v) else _null
-            if isinstance(v, dict):
-                if not _depth_test(current_depth):
-                    render_fn('{}{{ ... }}{}{}'.format(indent, comma, _metrics(0, v)))
-                else:
-                    render_fn('{}{{'.format(indent))
-                    count = _recurse_dict(v, current_depth, this_path)
-                    render_fn('{}}}{}{}'.format(indent, comma, _metrics(count, v)))
-            elif isinstance(v, list):
-                if not _depth_test(current_depth):
-                    render_fn('{}[ ... ]{}{}'.format(indent, comma, _metrics(0, v)))
-                elif any(isinstance(x, (dict, list)) for x in v):
-                    render_fn('{}['.format(indent))
-                    count = _recurse_list(v, current_depth, this_path)
-                    render_fn('{}]{}{}'.format(indent, comma, _metrics(count, v)))
-                else:
-                    render_fn('{}[{}]{}'.format(indent, _basic_list(v), comma))
-            else:
-                render_fn('{}{}{}'.format(indent, _item(v), comma))
-        return c + 1
+                render_fn('{}{}{}'.format(prefix, _item(v), comma))
+        return c
 
     if isinstance(j, (dict, list)):
-        _recurse_list([j])
+        _recurse([j])
     else:
         _output(_item(j))
 
