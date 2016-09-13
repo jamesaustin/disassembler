@@ -97,7 +97,7 @@ def json_debug(j, args):
                     yield n, None, v
                     n += 1
         else:
-            LOG.error('Unsupported type: {}'.format(type(j)))
+            LOG.error('Unsupported type: %s', type(j))
             exit()
 
     def _item(j):
@@ -110,30 +110,34 @@ def json_debug(j, args):
         elif isinstance(j, (str, unicode)):
             return '"{}"'.format(j)
         else:
-            LOG.error('Unsupported type: {}'.format(type(j)))
+            LOG.error('Unsupported type: %s', type(j))
             exit()
 
     def _info(path, count=0, value=None, key=None):
         if not args.paths and not args.counts:
             return ''
 
-        if not value:
-            if args.paths:
-                return ' # {}'.format(path)
-            else:
-                return ''
-
         if args.paths:
-            key_str = '{}:'.format(path)
+            key_str = '{}'.format(path)
         elif key:
-            key_str = '"{}":'.format(key)
+            key_str = '"{}"'.format(key)
         else:
             key_str = ''
 
-        if count == len(value):
-            return ' # {}<{}>'.format(key_str, count)
+        if args.counts:
+            if not value:
+                count_str = ''
+            elif count == len(value):
+                count_str = '<{}>'.format(count)
+            else:
+                count_str = '<{} of {}>'.format(count, len(value))
         else:
-            return ' # {}<{} of {}>'.format(key_str, count, len(value))
+            count_str = ''
+
+        if not key_str and not count_str:
+            return ''
+
+        return ' # {}{}'.format(key_str, count_str)
 
     def _basic_list(j):
         basic = []
@@ -147,7 +151,7 @@ def json_debug(j, args):
             basic.append('{}{}'.format(_item(v), comma))
         return ''.join(basic)
 
-    def _recurse(j, current_depth=0, path='/'):
+    def _recurse(j, current_depth=0, path=None):
         indent = ' ' * (current_depth * args.indent)
         current_depth += 1
         comma, no_comma_at = ',', len(j) - 1
@@ -155,17 +159,19 @@ def json_debug(j, args):
         c = 0
         for n, k, v in _culled(j):
             c += 1
-            if n > 0 and n != previous_n + 1:
-                render_fn('{}...'.format(indent))
-            previous_n = n
-            if k:
+            prefix = indent
+            if not path:
+                this_path = '/'
+            elif k:
                 prefix = '{}"{}": '.format(indent, k)
                 this_path = path_join(path, k)
             else:
-                prefix = '{}'.format(indent)
                 this_path = path_join(path, str(n))
             comma = '' if n == no_comma_at else comma
             render_fn = _output if _path_hit(this_path, v) else _null
+            if n > 0 and n != previous_n + 1:
+                render_fn('{}...'.format(indent))
+            previous_n = n
             if isinstance(v, dict):
                 if not _depth_test(current_depth):
                     render_fn('{}{{ ... }}{}{}'.format(prefix, comma, _info(this_path, 0, v)))
@@ -221,7 +227,7 @@ def parse_args():
     else:
         level = logging.WARNING
     logging.basicConfig(format='%(message)s', level=level)
-    LOG.debug('# {}'.format(str(args)))
+    LOG.debug('# %s', str(args))
 
     return args
 
