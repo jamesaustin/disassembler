@@ -66,7 +66,7 @@ def json_debug(j, args):
     def _depth_test(depth):
         return args.all or args.depth == 0 or depth <= args.depth
 
-    def _culled_dict(j, fn_gap):
+    def _culled_dict(j):
         keys = sorted(j.keys())
         if _dict_test(keys):
             for n, k in enumerate(keys):
@@ -76,13 +76,12 @@ def json_debug(j, args):
             for k in keys[:args.dict]:
                 yield n, k, j[k]
                 n += 1
-            fn_gap()
             n = len(keys) - args.dict
             for k in keys[-args.dict:]:
                 yield n, k, j[k]
                 n += 1
 
-    def _culled_list(j, fn_gap):
+    def _culled_list(j):
         if _list_test(j):
             for n, v in enumerate(j):
                 yield n, v
@@ -91,7 +90,6 @@ def json_debug(j, args):
             for v in j[:args.list]:
                 yield n, v
                 n += 1
-            fn_gap()
             n = len(j) - args.list
             for v in j[-args.list:]:
                 yield n, v
@@ -122,10 +120,12 @@ def json_debug(j, args):
 
     def _basic_list(j):
         basic = []
-        def _gap():
-            basic.append('... ')
         comma, no_comma_at = ', ', len(j) - 1
-        for n, v in _culled_list(j, _gap):
+        previous_n = 0
+        for n, v in _culled_list(j):
+            if n > 0 and n != previous_n + 1:
+                basic.append('... ')
+            previous_n = n
             comma = '' if n == no_comma_at else comma
             basic.append('{}{}'.format(_item(v), comma))
         return ''.join(basic)
@@ -133,12 +133,12 @@ def json_debug(j, args):
     def _recurse_dict(j, current_depth=0, path='/'):
         indent = ' ' * (current_depth * args.indent)
         current_depth += 1
-
-        def _gap():
-            render_fn('{}...'.format(indent))
-
         comma, no_comma_at = ',', len(j) - 1
-        for c, (n, k, v) in enumerate(_culled_dict(j, _gap)):
+        previous_n = 0
+        for c, (n, k, v) in enumerate(_culled_dict(j)):
+            if n > 0 and n != previous_n + 1:
+                render_fn('{}...'.format(indent))
+            previous_n = n
             comma = '' if n == no_comma_at else comma
             this_path = path_join(path, k)
             render_fn = _output if _path_hit(this_path, v) else _null
@@ -165,12 +165,12 @@ def json_debug(j, args):
     def _recurse_list(j, current_depth=0, path='/'):
         indent = ' ' * (current_depth * args.indent)
         current_depth += 1
-
-        def _gap():
-            render_fn('{}...'.format(indent))
-
         comma, no_comma_at = ',', len(j) - 1
-        for c, (n, v) in enumerate(_culled_list(j, _gap)):
+        previous_n = 0
+        for c, (n, v) in enumerate(_culled_list(j)):
+            if n > 0 and n != previous_n + 1:
+                render_fn('{}...'.format(indent))
+            previous_n = n
             comma = '' if n == no_comma_at else comma
             this_path = path_join(path, str(n))
             render_fn = _output if _path_hit(this_path, v) else _null
