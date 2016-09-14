@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from os.path import join as path_join
 from fnmatch import fnmatch
@@ -45,13 +46,15 @@ def json_debug(j, args):
         output.append(''.join(parts))
     def _null(*_):
         pass
+    def _indent(depth):
+        return ' ' * (depth * args.indent)
 
     def _dict_test(items):
         return args.all or args.dict == 0 or len(items) <= (args.dict * 2)
     def _list_test(items):
         return args.all or args.list == 0 or len(items) <= (args.list * 2)
     def _depth_test(depth):
-        return args.all or args.depth == 0 or depth <= args.depth
+        return args.all or args.depth == 0 or depth < args.depth
 
     def _culled(j, path):
         def _path_hit(this_path, child):
@@ -117,14 +120,12 @@ def json_debug(j, args):
             LOG.error('Unsupported type: %s', type(j))
             exit()
 
-    def _info(path, count=0, value=None, key=None):
+    def _info(path, count=0, value=None):
         if not args.paths and not args.counts:
             return ''
 
         if args.paths:
             key_str = '{}'.format(path)
-        elif key:
-            key_str = '"{}"'.format(key)
         else:
             key_str = ''
 
@@ -145,61 +146,73 @@ def json_debug(j, args):
 
     def _basic_list(j, path):
         basic = []
-        comma, no_comma_at = ', ', len(j) - 1
         previous_n = 0
+        rendered = 0
         for n, _, v, _ in _culled(j, path):
+            rendered += 1
             if n > 0 and n != previous_n + 1:
                 basic.append('... ')
             previous_n = n
-            comma = '' if n == no_comma_at else comma
-            basic.append('{}{}'.format(_item(v), comma))
-        return ''.join(basic)
+            basic.append(_item(v))
+        _output(', '.join(basic))
+        return rendered
 
-    def _recurse(j, current_depth=0, path=None):
-        indent = ' ' * (current_depth * args.indent)
-        current_depth += 1
-        comma, no_comma_at = ',', len(j) - 1
+    def _recurse(j, depth=0, path='/'):
+        if isinstance(j, dict):
+            if not _depth_test(depth):
+                _output('{ ... }', _info(path, 0, j))
+                return
+            elif len(j) == 0:
+                _output('{}', _info(path, 0, j))
+                return
+            else:
+                _output('{\n')
+        elif isinstance(j, list):
+            if not _depth_test(depth):
+                _output('[ ... ]', _info(path, 0, j))
+                return
+            elif any(isinstance(x, (dict, list)) for x in j):
+                _output('[\n')
+            else:
+                _output('[')
+                rendered = _basic_list(j, path)
+                _output(']', _info(path, rendered, j))
+                return
+        else:
+            _output(_item(j))
+            return 1
+
+        depth += 1
+        indent = _indent(depth)
         previous_n = 0
-        c = 0
+        rendered = 0
         for n, k, v, this_path in _culled(j, path):
-            c += 1
+            rendered += 1
+            prefix = '{}"{}": '.format(indent, k) if k else indent
 
             # Is there a gap in the output, if so add a '...'
             if n > 0 and n != previous_n + 1:
-                _output(indent, '...')
+                _output(indent, '...\n')
             previous_n = n
 
-            # Do we need a comma at the end of the item?
-            comma = '' if n == no_comma_at else comma
-            prefix = '{}"{}": '.format(indent, k) if k else indent
             if isinstance(v, dict):
-                if not _depth_test(current_depth):
-                    _output(prefix, '{ ... }', comma, _info(this_path, 0, v))
-                elif len(v) == 0:
-                    _output(prefix, '{}', comma, _info(this_path, 0, v, k))
-                else:
-                    _output(prefix, '{')
-                    count = _recurse(v, current_depth, this_path)
-                    _output(indent, '}', comma, _info(this_path, count, v, k))
+                _output(prefix)
+                _recurse(v, depth, this_path)
+                _output('\n')
             elif isinstance(v, list):
-                if not _depth_test(current_depth):
-                    _output(prefix, '[ ... ]', comma, _info(this_path, 0, v))
-                elif any(isinstance(x, (dict, list)) for x in v):
-                    _output(prefix, '[')
-                    count = _recurse(v, current_depth, this_path)
-                    _output(indent, ']', comma, _info(this_path, count, v, k))
-                else:
-                    _output(prefix, '[', _basic_list(v, this_path), ']', comma, _info(this_path))
+                _output(prefix)
+                _recurse(v, depth, this_path)
+                _output('\n')
             else:
-                _output(prefix, _item(v), comma, _info(this_path))
+                _output(prefix, _item(v), _info(this_path), '\n')
 
-        return c
+        indent = _indent(depth - 1)
+        if isinstance(j, dict):
+            _output(indent, '}', _info(path, rendered, j))
+        elif isinstance(j, list):
+            _output(indent, ']', _info(path, rendered, j))
 
-    if isinstance(j, (dict, list)):
-        _recurse([j])
-    else:
-        _output(_item(j))
-
+    _recurse(j)
     return output
 
 def parse_args():
@@ -241,7 +254,7 @@ def main():
         elif args.style == 'pretty':
             print(json_dumps(j, sort_keys=True, indent=args.indent, separators=(',', ': ')))
         else:
-            print('\n'.join(json_debug(j, args)))
+            print(''.join(json_debug(j, args)))
 
     if args.test:
         _process(TEST_JSON)
