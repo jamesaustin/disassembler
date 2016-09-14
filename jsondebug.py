@@ -91,17 +91,17 @@ def json_debug(j, args):
         elif isinstance(j, list):
             if args.path or _list_test(j):
                 for n, v in enumerate(j):
-                    this_path = path_join(path, str(n)) if path else '/'
+                    this_path = path_join(path, str(n))
                     if _path_hit(this_path, v):
                         yield n, None, v, this_path
             else:
                 n = 0
                 for v in j[:args.list]:
-                    yield n, None, v, path_join(path, str(n)) if path else '/'
+                    yield n, None, v, path_join(path, str(n))
                     n += 1
                 n = len(j) - args.list
                 for v in j[-args.list:]:
-                    yield n, None, v, path_join(path, str(n)) if path else '/'
+                    yield n, None, v, path_join(path, str(n))
                     n += 1
         else:
             LOG.error('Unsupported type: %s', type(j))
