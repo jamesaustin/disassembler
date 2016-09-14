@@ -46,21 +46,6 @@ def json_debug(j, args):
     def _null(*_):
         pass
 
-    def _path_hit(this_path, child):
-        def _child_hit(_this_path, _child):
-            if isinstance(_child, dict):
-                for k, v, in _child.iteritems():
-                    _path = path_join(_this_path, k)
-                    if fnmatch(_path, args.path) or _child_hit(_path, v):
-                        return True
-            elif isinstance(_child, list):
-                for n, v in enumerate(_child):
-                    _path = path_join(_this_path, str(n))
-                    if fnmatch(_path, args.path) or _child_hit(_path, v):
-                        return True
-            return False
-        return fnmatch(this_path, args.path) or _child_hit(this_path, child)
-
     def _dict_test(items):
         return args.all or args.dict == 0 or len(items) <= (args.dict * 2)
     def _list_test(items):
@@ -68,33 +53,52 @@ def json_debug(j, args):
     def _depth_test(depth):
         return args.all or args.depth == 0 or depth <= args.depth
 
-    def _culled(j):
+    def _culled(j, path):
+        def _path_hit(this_path, child):
+            def _child_hit(_this_path, _child):
+                if isinstance(_child, dict):
+                    for k, v, in _child.iteritems():
+                        _path = path_join(_this_path, k)
+                        if fnmatch(_path, args.path) or _child_hit(_path, v):
+                            return True
+                elif isinstance(_child, list):
+                    for n, v in enumerate(_child):
+                        _path = path_join(_this_path, str(n))
+                        if fnmatch(_path, args.path) or _child_hit(_path, v):
+                            return True
+                return False
+            return not args.path or fnmatch(this_path, args.path) or _child_hit(this_path, child)
+
         if isinstance(j, dict):
             keys = sorted(j.keys())
-            if _dict_test(keys):
+            if args.path or _dict_test(keys):
                 for n, k in enumerate(keys):
-                    yield n, k, j[k]
+                    this_path = path_join(path, k)
+                    if _path_hit(this_path, j[k]):
+                        yield n, k, j[k], this_path
             else:
                 n = 0
                 for k in keys[:args.dict]:
-                    yield n, k, j[k]
+                    yield n, k, j[k], path_join(path, k)
                     n += 1
                 n = len(keys) - args.dict
                 for k in keys[-args.dict:]:
-                    yield n, k, j[k]
+                    yield n, k, j[k], path_join(path, k)
                     n += 1
         elif isinstance(j, list):
-            if _list_test(j):
+            if args.path or _list_test(j):
                 for n, v in enumerate(j):
-                    yield n, None, v
+                    this_path = path_join(path, str(n)) if path else '/'
+                    if _path_hit(this_path, v):
+                        yield n, None, v, this_path
             else:
                 n = 0
                 for v in j[:args.list]:
-                    yield n, None, v
+                    yield n, None, v, path_join(path, str(n)) if path else '/'
                     n += 1
                 n = len(j) - args.list
                 for v in j[-args.list:]:
-                    yield n, None, v
+                    yield n, None, v, path_join(path, str(n)) if path else '/'
                     n += 1
         else:
             LOG.error('Unsupported type: %s', type(j))
@@ -139,11 +143,11 @@ def json_debug(j, args):
 
         return ' # {}{}'.format(key_str, count_str)
 
-    def _basic_list(j):
+    def _basic_list(j, path):
         basic = []
         comma, no_comma_at = ', ', len(j) - 1
         previous_n = 0
-        for n, _, v in _culled(j):
+        for n, _, v, _ in _culled(j, path):
             if n > 0 and n != previous_n + 1:
                 basic.append('... ')
             previous_n = n
@@ -157,41 +161,38 @@ def json_debug(j, args):
         comma, no_comma_at = ',', len(j) - 1
         previous_n = 0
         c = 0
-        for n, k, v in _culled(j):
+        for n, k, v, this_path in _culled(j, path):
             c += 1
-            prefix = indent
-            if not path:
-                this_path = '/'
-            elif k:
-                prefix = '{}"{}": '.format(indent, k)
-                this_path = path_join(path, k)
-            else:
-                this_path = path_join(path, str(n))
-            comma = '' if n == no_comma_at else comma
-            render_fn = _output if _path_hit(this_path, v) else _null
+
+            # Is there a gap in the output, if so add a '...'
             if n > 0 and n != previous_n + 1:
-                render_fn(indent, '...')
+                _output(indent, '...')
             previous_n = n
+
+            # Do we need a comma at the end of the item?
+            comma = '' if n == no_comma_at else comma
+            prefix = '{}"{}": '.format(indent, k) if k else indent
             if isinstance(v, dict):
                 if not _depth_test(current_depth):
-                    render_fn(prefix, '{ ... }', comma, _info(this_path, 0, v))
+                    _output(prefix, '{ ... }', comma, _info(this_path, 0, v))
                 elif len(v) == 0:
-                    render_fn(prefix, '{}', comma, _info(this_path, 0, v, k))
+                    _output(prefix, '{}', comma, _info(this_path, 0, v, k))
                 else:
-                    render_fn(prefix, '{')
+                    _output(prefix, '{')
                     count = _recurse(v, current_depth, this_path)
-                    render_fn(indent, '}', comma, _info(this_path, count, v, k))
+                    _output(indent, '}', comma, _info(this_path, count, v, k))
             elif isinstance(v, list):
                 if not _depth_test(current_depth):
-                    render_fn(prefix, '[ ... ]', comma, _info(this_path, 0, v))
+                    _output(prefix, '[ ... ]', comma, _info(this_path, 0, v))
                 elif any(isinstance(x, (dict, list)) for x in v):
-                    render_fn(prefix, '[')
+                    _output(prefix, '[')
                     count = _recurse(v, current_depth, this_path)
-                    render_fn(indent, ']', comma, _info(this_path, count, v, k))
+                    _output(indent, ']', comma, _info(this_path, count, v, k))
                 else:
-                    render_fn(prefix, '[', _basic_list(v), ']', comma, _info(this_path))
+                    _output(prefix, '[', _basic_list(v, this_path), ']', comma, _info(this_path))
             else:
-                render_fn(prefix, _item(v), comma, _info(this_path))
+                _output(prefix, _item(v), comma, _info(this_path))
+
         return c
 
     if isinstance(j, (dict, list)):
@@ -213,7 +214,7 @@ def parse_args():
     group.add_argument('--list', type=int, default=DEFAULT_LIST_ELEMENTS, help='Num list entries to display')
     group.add_argument('--paths', action='store_true', help='Output item paths')
     group.add_argument('--counts', action='store_true', help='Output item counts')
-    group.add_argument('--path', type=str, default=DEFAULT_PATH, help='File pattern selection of elements to display')
+    group.add_argument('--path', type=str, help='File pattern selection of elements to display')
     group = parser.add_argument_group('debugging options')
     group.add_argument('--verbose', '-v', action='store_true')
     group.add_argument('--debug', action='store_true')
