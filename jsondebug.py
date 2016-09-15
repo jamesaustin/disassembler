@@ -9,6 +9,7 @@ from json import load as json_load, dumps as json_dumps
 import logging
 LOG = logging.getLogger(__name__)
 
+PROCESS_CHOICES = ['compact', 'pretty', 'debug', 'keys']
 DEFAULT_INDENTATION = 2
 DEFAULT_DEPTH = 5
 DEFAULT_DICT_ELEMENTS = 4
@@ -18,19 +19,20 @@ DEFAULT_PATH = '*'
 PYTHON_TYPES = False
 TRUE_STR, FALSE_STR, NULL_STR = ('True', 'False', 'None') if PYTHON_TYPES else ('true', 'false', 'none')
 
+TEST_NUM_ELEMENTS = 100
 TEST_JSON = {
     'list': [],
-    'listInt': list(range(100)),
-    'listFloat': [1.0 / (x + 1) for x in range(100)],
-    'listStr': [str(x) for x in range(100)],
-    'listBool': [x % 2 == 0 for x in range(100)],
-    'listNull': [None for x in range(100)],
-    'listDict': [{str(x): x} for x in range(100)],
-    'listList': [list(range(10)) for x in range(100)],
+    'listInt': list(range(TEST_NUM_ELEMENTS)),
+    'listFloat': [1.0 / (x + 1) for x in range(TEST_NUM_ELEMENTS)],
+    'listStr': [str(x) for x in range(TEST_NUM_ELEMENTS)],
+    'listBool': [x % 2 == 0 for x in range(TEST_NUM_ELEMENTS)],
+    'listNull': [None for x in range(TEST_NUM_ELEMENTS)],
+    'listDict': [{'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)],
+    'listList': [list(range(10)) for x in range(TEST_NUM_ELEMENTS)],
     'listListListList': [[[[None]]]],
     'dict': {},
-    'dictStr': {str(x): x for x in range(100)},
-    'dictDict': {str(x): {str(x): x} for x in range(100)},
+    'dictStr': {'k'+str(x): x for x in range(TEST_NUM_ELEMENTS)},
+    'dictDict': {'k'+str(x): {'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)},
     'dictDictDictDict': {'a': {'b': {'c': {'d': 'e'}}}},
     'int': 1,
     'float': 1.0,
@@ -218,10 +220,25 @@ def json_debug(j, args):
     _recurse(j)
     return output
 
+def keys_debug(j, args):
+    output = []
+    def _recurse(j, path='/'):
+        if isinstance(j, dict):
+            keys = sorted(j.keys())
+            for k in keys:
+                this_path = path_join(path, k)
+                output.append(this_path)
+                _recurse(j[k], this_path)
+        elif isinstance(j, list):
+            for n, v in enumerate(j):
+                _recurse(v, path_join(path, '#{}'.format(n)))
+    _recurse(j)
+    return output
+
 def parse_args():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('input', nargs='*', type=str, help='JSON files to process')
-    parser.add_argument('--style', choices=['compact', 'pretty', 'debug'], default='debug', help='Style of JSON output')
+    parser.add_argument('--style', choices=PROCESS_CHOICES, default='debug', help='Style of JSON output')
     group = parser.add_argument_group('what to output?')
     group.add_argument('--all', action='store_true', help='Output everything')
     group.add_argument('--indent', type=int, default=DEFAULT_INDENTATION, help='Print indentation')
@@ -256,7 +273,9 @@ def main():
             print(json_dumps(j, sort_keys=True, separators=(',', ':')))
         elif args.style == 'pretty':
             print(json_dumps(j, sort_keys=True, indent=args.indent, separators=(',', ': ')))
-        else:
+        elif args.style == 'keys':
+            print('\n'.join(keys_debug(j, args)))
+        elif args.style == 'debug':
             print(''.join(json_debug(j, args)))
 
     if args.test:
