@@ -222,16 +222,20 @@ def json_debug(j, args):
 
 def keys_debug(j, args):
     output = []
-    def _recurse(j, path='/'):
-        if isinstance(j, dict):
-            keys = sorted(j.keys())
-            for k in keys:
-                this_path = path_join(path, k)
-                output.append(this_path)
-                _recurse(j[k], this_path)
-        elif isinstance(j, list):
-            for n, v in enumerate(j):
-                _recurse(v, path_join(path, '#{}'.format(n)))
+    def _recurse(j, depth=0, path='/'):
+        # TODO add support for "dict" + "list"?
+        # TODO add support for "path"
+        if args.all or args.depth == 0 or depth < args.depth:
+            depth += 1
+            if isinstance(j, dict):
+                keys = sorted(j.keys())
+                for k in keys:
+                    this_path = path_join(path, k)
+                    output.append(this_path)
+                    _recurse(j[k], depth, this_path)
+            elif isinstance(j, list):
+                for n, v in enumerate(j):
+                    _recurse(v, depth, path_join(path, str(n)))
     _recurse(j)
     return output
 
