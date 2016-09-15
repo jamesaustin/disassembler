@@ -130,7 +130,7 @@ def json_debug(j, args):
             key_str = ''
 
         if args.counts:
-            if not value:
+            if value is None:
                 count_str = ''
             elif count == len(value):
                 count_str = '<{}>'.format(count)
@@ -159,16 +159,19 @@ def json_debug(j, args):
 
     def _recurse(j, depth=0, path='/'):
         if isinstance(j, dict):
-            if not _depth_test(depth):
-                _output('{ ... }', _info(path, 0, j))
-                return
-            elif len(j) == 0:
+            if len(j) == 0:
                 _output('{}', _info(path, 0, j))
+                return
+            elif not _depth_test(depth):
+                _output('{ ... }', _info(path, 0, j))
                 return
             else:
                 _output('{\n')
         elif isinstance(j, list):
-            if not _depth_test(depth):
+            if len(j) == 0:
+                _output('[]', _info(path, 0, j))
+                return
+            elif not _depth_test(depth):
                 _output('[ ... ]', _info(path, 0, j))
                 return
             elif any(isinstance(x, (dict, list)) for x in j):
@@ -180,7 +183,7 @@ def json_debug(j, args):
                 return
         else:
             _output(_item(j))
-            return 1
+            return
 
         depth += 1
         indent = _indent(depth)
