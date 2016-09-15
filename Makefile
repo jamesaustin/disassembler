@@ -13,6 +13,8 @@ all:
 	@diff $(LOGS)/test.paths.txt $(LOGS)/test.1.paths.txt | tee $(LOGS)/diff.1.paths.txt
 	@./jsondebug.py $(OPTIONS) --all --counts --paths > $(LOGS)/test.1.all.txt
 	@diff $(LOGS)/test.all.txt $(LOGS)/test.1.all.txt | tee $(LOGS)/diff.1.all.txt
+	@./jsondebug.py $(OPTIONS) --style keys > $(LOGS)/test.1.keys.txt
+	@diff $(LOGS)/test.keys.txt $(LOGS)/test.1.keys.txt | tee $(LOGS)/diff.1.keys.txt
 
 base:
 	@-mkdir -p $(LOGS)
@@ -20,6 +22,7 @@ base:
 	@./jsondebug.py $(OPTIONS) --counts > $(LOGS)/test.counts.txt
 	@./jsondebug.py $(OPTIONS) --paths > $(LOGS)/test.paths.txt
 	@./jsondebug.py $(OPTIONS) --all --counts --paths > $(LOGS)/test.all.txt
+	@./jsondebug.py $(OPTIONS) --style keys > $(LOGS)/test.keys.txt
 
 check:
 	@pylint --rcfile .pylintrc jsondebug.py | tee $(LOGS)/pylint.txt
