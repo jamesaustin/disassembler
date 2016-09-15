@@ -19,7 +19,7 @@ DEFAULT_PATH = '*'
 PYTHON_TYPES = False
 TRUE_STR, FALSE_STR, NULL_STR = ('True', 'False', 'None') if PYTHON_TYPES else ('true', 'false', 'none')
 
-TEST_NUM_ELEMENTS = 100
+TEST_NUM_ELEMENTS = 10
 TEST_JSON = {
     'list': [],
     'listInt': list(range(TEST_NUM_ELEMENTS)),
