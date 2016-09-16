@@ -1,7 +1,7 @@
 # disassembler
 Simple stupid tool to help with disassembling JSON assets.
 
-Testing with Python 2.7.12 on Mac OS X 10.11.6.
+Tested with Python 2.7.12 on Mac OS X 10.11.6.
 
 # Usage
 ```
