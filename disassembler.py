@@ -120,11 +120,8 @@ def json_debug(j, args):
             return TRUE_STR if j else FALSE_STR
         elif isinstance(j, (float, int)):
             return '{}'.format(j)
-        elif isinstance(j, (str, unicode)):
-            return '"{}"'.format(j)
         else:
-            LOG.error('Unsupported item: %s %s', j, type(j))
-            exit()
+            return '"{}"'.format(j)
 
     def _info(path, count=0, value=None):
         if not args.paths and not args.counts:
