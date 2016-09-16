@@ -269,7 +269,7 @@ def parse_args():
     else:
         level = logging.WARNING
     logging.basicConfig(format='%(message)s', level=level)
-    LOG.debug('# %s', str(args))
+    LOG.debug('# %s', args)
 
     return args
 
