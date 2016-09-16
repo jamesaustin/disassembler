@@ -1,2 +1,2 @@
-# jsondebug
-Simple stupid tool to help with debugging JSON assets.
+# disassembler
+Simple stupid tool to help with disassembling JSON assets.
