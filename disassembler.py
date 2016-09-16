@@ -21,6 +21,8 @@ TRUE_STR, FALSE_STR, NULL_STR = ('True', 'False', 'None') if PYTHON_TYPES else (
 
 TEST_NUM_ELEMENTS = 10
 def _test_json():
+    def k(k):
+        return 'k{}'.format(k)
     return {
         'listEmpty': [],
         'listInt': list(range(TEST_NUM_ELEMENTS)),
@@ -28,14 +30,14 @@ def _test_json():
         'listStr': [str(x) for x in range(TEST_NUM_ELEMENTS)],
         'listBool': [x % 2 == 0 for x in range(TEST_NUM_ELEMENTS)],
         'listNull': [None for x in range(TEST_NUM_ELEMENTS)],
-        'listDict': [{'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)],
+        'listDict': [{k(x): x} for x in range(TEST_NUM_ELEMENTS)],
         'listList': [list(range(10)) for x in range(TEST_NUM_ELEMENTS)],
         'listListListList': [[[[None]]]],
         'dictEmpty': {},
-        'dictInt': {'k'+str(x): x for x in range(TEST_NUM_ELEMENTS)},
+        'dictInt': {k(x): x for x in range(TEST_NUM_ELEMENTS)},
         'dictUnicode': {u'k{}'.format(x): u'{}'.format(x) for x in range(TEST_NUM_ELEMENTS)},
-        'dictStr': {'k'+str(x): str(x) for x in range(TEST_NUM_ELEMENTS)},
-        'dictDict': {'k'+str(x): {'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)},
+        'dictStr': {k(x): str(x) for x in range(TEST_NUM_ELEMENTS)},
+        'dictDict': {k(x): {k(x): x} for x in range(TEST_NUM_ELEMENTS)},
         'dictDictDictDict': {'a': {'b': {'c': {'d': 'e'}}}},
         'int': 1,
         'float': 1.0,
