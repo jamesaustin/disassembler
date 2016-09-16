@@ -2,6 +2,8 @@
 
 OPTIONS=--test --dict 10
 LOGS=logs
+OPEN=open
+GITHUB_URL=https://github.com/jamesaustin/disassembler
 
 all:
 	@-mkdir -p $(LOGS)
@@ -27,4 +29,9 @@ base:
 check:
 	@pylint --rcfile .pylintrc disassembler.py | tee $(LOGS)/pylint.txt
 
+edit:
+	@$(EDITOR) .
+
+github:
+	@$(OPEN) $(GITHUB_URL) 
 -include make/*.mk
