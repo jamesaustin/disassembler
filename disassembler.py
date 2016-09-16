@@ -9,6 +9,12 @@ from json import load as json_load, dumps as json_dumps
 import logging
 LOG = logging.getLogger(__name__)
 
+import sys
+if sys.version_info < (3,):
+    text_type = (unicode, str)
+else:
+    text_type = str
+
 PROCESS_CHOICES = ['compact', 'pretty', 'debug', 'keys']
 DEFAULT_INDENTATION = 2
 DEFAULT_DEPTH = 5
@@ -73,7 +79,7 @@ def json_debug(j, args):
             return not args.path or fnmatch(this_path, args.path) or _child_hit(this_path, child)
 
         if isinstance(j, dict):
-            keys = sorted(j.keys())
+            keys = sorted(j)
             if args.path or _dict_test(keys):
                 for n, k in enumerate(keys):
                     this_path = path_join(path, k)
@@ -114,10 +120,10 @@ def json_debug(j, args):
             return TRUE_STR if j else FALSE_STR
         elif isinstance(j, (float, int)):
             return '{}'.format(j)
-        elif isinstance(j, (str, unicode)):
+        elif isinstance(j, text_type):
             return '"{}"'.format(j)
         else:
-            LOG.error('Unsupported type: %s', type(j))
+            LOG.error('Unsupported item: %s %s', j, type(j))
             exit()
 
     def _info(path, count=0, value=None):
@@ -226,7 +232,7 @@ def keys_debug(j, args):
         if args.all or args.depth == 0 or depth < args.depth:
             depth += 1
             if isinstance(j, dict):
-                keys = sorted(j.keys())
+                keys = sorted(j)
                 for k in keys:
                     this_path = path_join(path, k)
                     output.append(this_path)
