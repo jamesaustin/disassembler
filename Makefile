@@ -33,5 +33,6 @@ edit:
 	@$(EDITOR) .
 
 github:
-	@$(OPEN) $(GITHUB_URL) 
+	@$(OPEN) $(GITHUB_URL)
+
 -include make/*.mk
