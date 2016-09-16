@@ -9,12 +9,6 @@ from json import load as json_load, dumps as json_dumps
 import logging
 LOG = logging.getLogger(__name__)
 
-import sys
-if sys.version_info < (3,):
-    text_type = (unicode, str)
-else:
-    text_type = str
-
 PROCESS_CHOICES = ['compact', 'pretty', 'debug', 'keys']
 DEFAULT_INDENTATION = 2
 DEFAULT_DEPTH = 5
@@ -26,27 +20,31 @@ PYTHON_TYPES = False
 TRUE_STR, FALSE_STR, NULL_STR = ('True', 'False', 'None') if PYTHON_TYPES else ('true', 'false', 'none')
 
 TEST_NUM_ELEMENTS = 10
-TEST_JSON = {
-    'list': [],
-    'listInt': list(range(TEST_NUM_ELEMENTS)),
-    'listFloat': [1.0 / (x + 1) for x in range(TEST_NUM_ELEMENTS)],
-    'listStr': [str(x) for x in range(TEST_NUM_ELEMENTS)],
-    'listBool': [x % 2 == 0 for x in range(TEST_NUM_ELEMENTS)],
-    'listNull': [None for x in range(TEST_NUM_ELEMENTS)],
-    'listDict': [{'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)],
-    'listList': [list(range(10)) for x in range(TEST_NUM_ELEMENTS)],
-    'listListListList': [[[[None]]]],
-    'dict': {},
-    'dictStr': {'k'+str(x): x for x in range(TEST_NUM_ELEMENTS)},
-    'dictDict': {'k'+str(x): {'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)},
-    'dictDictDictDict': {'a': {'b': {'c': {'d': 'e'}}}},
-    'int': 1,
-    'float': 1.0,
-    'str': 'hello',
-    'boolTrue': True,
-    'boolFalse': False,
-    'null': None
-}
+def _test_json():
+    return {
+        'listEmpty': [],
+        'listInt': list(range(TEST_NUM_ELEMENTS)),
+        'listFloat': [1.0 / (x + 1) for x in range(TEST_NUM_ELEMENTS)],
+        'listStr': [str(x) for x in range(TEST_NUM_ELEMENTS)],
+        'listBool': [x % 2 == 0 for x in range(TEST_NUM_ELEMENTS)],
+        'listNull': [None for x in range(TEST_NUM_ELEMENTS)],
+        'listDict': [{'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)],
+        'listList': [list(range(10)) for x in range(TEST_NUM_ELEMENTS)],
+        'listListListList': [[[[None]]]],
+        'dictEmpty': {},
+        'dictInt': {'k'+str(x): x for x in range(TEST_NUM_ELEMENTS)},
+        'dictUnicode': {u'k{}'.format(x): u'{}'.format(x) for x in range(TEST_NUM_ELEMENTS)},
+        'dictStr': {'k'+str(x): str(x) for x in range(TEST_NUM_ELEMENTS)},
+        'dictDict': {'k'+str(x): {'k'+str(x): x} for x in range(TEST_NUM_ELEMENTS)},
+        'dictDictDictDict': {'a': {'b': {'c': {'d': 'e'}}}},
+        'int': 1,
+        'float': 1.0,
+        'unicode': u'hello',
+        'str': 'hello',
+        'boolTrue': True,
+        'boolFalse': False,
+        'null': None
+    }
 
 def json_debug(j, args):
     output = []
@@ -120,7 +118,7 @@ def json_debug(j, args):
             return TRUE_STR if j else FALSE_STR
         elif isinstance(j, (float, int)):
             return '{}'.format(j)
-        elif isinstance(j, text_type):
+        elif isinstance(j, (str, unicode)):
             return '"{}"'.format(j)
         else:
             LOG.error('Unsupported item: %s %s', j, type(j))
@@ -287,7 +285,7 @@ def main():
             print(''.join(json_debug(j, args)))
 
     if args.test:
-        _process(TEST_JSON)
+        _process(_test_json())
         return
 
     for i in args.input:
