@@ -46,8 +46,6 @@ def json_debug(j, args):
     output = []
     def _output(*parts):
         output.append(''.join(parts))
-    def _null(*_):
-        pass
     def _indent(depth):
         return ' ' * (depth * args.indent)
 
