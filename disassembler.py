@@ -5,6 +5,7 @@ from os.path import join as path_join
 from fnmatch import fnmatch
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from json import load as json_load, dumps as json_dumps, loads as json_loads
+from itertools import chain
 
 import logging
 LOG = logging.getLogger(__name__)
@@ -86,14 +87,9 @@ def json_debug(j, args):
                     if _path_hit(this_path, j[k]):
                         yield n, k, j[k], this_path
             else:
-                n = 0
-                for k in keys[:args.dict]:
+                for n, k in chain(enumerate(keys[:args.dict]),
+                                  enumerate(keys[-args.dict:], start=len(keys) - args.dict)):
                     yield n, k, j[k], path_join(path, k)
-                    n += 1
-                n = len(keys) - args.dict
-                for k in keys[-args.dict:]:
-                    yield n, k, j[k], path_join(path, k)
-                    n += 1
         elif isinstance(j, list):
             if args.path or _list_test(j):
                 for n, v in enumerate(j):
@@ -101,14 +97,8 @@ def json_debug(j, args):
                     if _path_hit(this_path, v):
                         yield n, None, v, this_path
             else:
-                n = 0
-                for v in j[:args.list]:
+                for n, v in chain(enumerate(j[:args.list]), enumerate(j[-args.list:], start=len(j) - args.list)):
                     yield n, None, v, path_join(path, str(n))
-                    n += 1
-                n = len(j) - args.list
-                for v in j[-args.list:]:
-                    yield n, None, v, path_join(path, str(n))
-                    n += 1
         else:
             LOG.error('Unsupported type: %s', type(j))
             exit()
