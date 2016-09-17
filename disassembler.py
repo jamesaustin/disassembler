@@ -4,7 +4,7 @@ from __future__ import print_function
 from os.path import join as path_join
 from fnmatch import fnmatch
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from json import load as json_load, dumps as json_dumps
+from json import load as json_load, dumps as json_dumps, loads as json_loads
 
 import logging
 LOG = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ TEST_NUM_ELEMENTS = 10
 def _test_json():
     def k(k):
         return 'k{}'.format(k)
-    return {
+    return json_loads(json_dumps({
         'listEmpty': [],
         'listInt': list(range(TEST_NUM_ELEMENTS)),
         'listFloat': [1.0 / (x + 1) for x in range(TEST_NUM_ELEMENTS)],
@@ -46,7 +46,7 @@ def _test_json():
         'boolTrue': True,
         'boolFalse': False,
         'null': None
-    }
+    }))
 
 def json_debug(j, args):
     output = []
