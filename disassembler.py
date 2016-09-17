@@ -118,7 +118,7 @@ def json_debug(j, args):
             return ''
 
         if args.paths:
-            key_str = '{}'.format(path)
+            key_str = path
         else:
             key_str = ''
 
