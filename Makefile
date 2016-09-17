@@ -1,6 +1,6 @@
 #!/usr/bin/env make
 
-OPTIONS=--test --dict 10
+OPTIONS=--test --dict 0
 LOGS=logs
 OPEN=open
 GITHUB_URL=https://github.com/jamesaustin/disassembler
