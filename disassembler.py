@@ -67,7 +67,7 @@ def json_debug(j, args):
         def _path_hit(this_path, child):
             def _child_hit(_this_path, _child):
                 if isinstance(_child, dict):
-                    for k, v, in _child.iteritems():
+                    for k, v in _child.iteritems():
                         _path = path_join(_this_path, k)
                         if fnmatch(_path, args.path) or _child_hit(_path, v):
                             return True
@@ -111,7 +111,7 @@ def json_debug(j, args):
         elif isinstance(j, (float, int)):
             return '{}'.format(j)
         else:
-            return '"{}"'.format(j)
+            return u'"{}"'.format(j)
 
     def _info(path, count=0, value=None):
         if not args.paths and not args.counts:
