@@ -135,7 +135,7 @@ def json_debug(j, args):
         if not key_str and not count_str:
             return ''
 
-        return ' # {}{}'.format(key_str, count_str)
+        return u' # {}{}'.format(key_str, count_str)
 
     def _basic_list(j, path):
         basic = []
@@ -184,7 +184,7 @@ def json_debug(j, args):
         rendered = 0
         for n, k, v, this_path in _culled(j, path):
             rendered += 1
-            prefix = '{}"{}": '.format(indent, k) if k else indent
+            prefix = u'{}"{}": '.format(indent, k) if k else indent
 
             # Is there a gap in the output, if so add a '...'
             if n > 0 and n != previous_n + 1:
