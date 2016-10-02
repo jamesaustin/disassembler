@@ -3,9 +3,10 @@ from __future__ import print_function
 
 from os.path import join as path_join
 from fnmatch import fnmatch
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from json import load as json_load, dumps as json_dumps, loads as json_loads
 from itertools import chain
+from sys import stdin as sys_stdin
 
 import logging
 LOG = logging.getLogger(__name__)
@@ -232,7 +233,7 @@ def keys_debug(j, args):
 
 def parse_args():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('input', nargs='*', type=str, help='JSON files to process')
+    parser.add_argument('input', nargs='*', type=FileType('r'), default=[sys_stdin], help='JSON files to process')
     parser.add_argument('--style', choices=PROCESS_CHOICES, default='debug', help='Style of JSON output')
     group = parser.add_argument_group('what to output?')
     group.add_argument('--all', action='store_true', help='Output everything')
@@ -277,10 +278,9 @@ def main():
         _process(_test_json())
         return
 
-    for i in args.input:
-        with open(i) as f:
-            j = json_load(f)
-            _process(j)
+    for f in args.input:
+        j = json_load(f)
+        _process(j)
 
 if __name__ == '__main__':
     main()
