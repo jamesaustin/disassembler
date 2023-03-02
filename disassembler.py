@@ -1,6 +1,4 @@
-#!/usr/bin/env python2
-from __future__ import print_function
-
+#!/usr/bin/env python3
 from os.path import join as path_join
 from fnmatch import fnmatch
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
@@ -43,13 +41,13 @@ def _test_json():
                 "listListListList": [[[[None]]]],
                 "dictEmpty": {},
                 "dictInt": {k(x): x for x in range(TEST_NUM_ELEMENTS)},
-                "dictUnicode": {u"k{}".format(x): u"{}".format(x) for x in range(TEST_NUM_ELEMENTS)},
+                "dictUnicode": {"k{}".format(x): "{}".format(x) for x in range(TEST_NUM_ELEMENTS)},
                 "dictStr": {k(x): str(x) for x in range(TEST_NUM_ELEMENTS)},
                 "dictDict": {k(x): {k(x): x} for x in range(TEST_NUM_ELEMENTS)},
                 "dictDictDictDict": {"a": {"b": {"c": {"d": "e"}}}},
                 "int": 1,
                 "float": 1.0,
-                "unicode": u"hello",
+                "unicode": "hello",
                 "str": "hello",
                 "boolTrue": True,
                 "boolFalse": False,
@@ -81,7 +79,7 @@ def json_debug(j, args):
         def _path_hit(this_path, child):
             def _child_hit(_this_path, _child):
                 if isinstance(_child, dict):
-                    for k, v in _child.iteritems():
+                    for k, v in _child.items():
                         _path = path_join(_this_path, k)
                         if fnmatch(_path, args.path) or _child_hit(_path, v):
                             return True
@@ -127,7 +125,7 @@ def json_debug(j, args):
         elif isinstance(j, (float, int)):
             return "{}".format(j)
         else:
-            return u'"{}"'.format(j)
+            return '"{}"'.format(j)
 
     def _info(path, count=0, value=None):
         if not args.paths and not args.counts:
@@ -151,7 +149,7 @@ def json_debug(j, args):
         if not key_str and not count_str:
             return ""
 
-        return u" # {}{}".format(key_str, count_str)
+        return " # {}{}".format(key_str, count_str)
 
     def _basic_list(j, path):
         basic = []
@@ -200,7 +198,7 @@ def json_debug(j, args):
         rendered = 0
         for n, k, v, this_path in _culled(j, path):
             rendered += 1
-            prefix = u'{}"{}": '.format(indent, k) if k else indent
+            prefix = '{}"{}": '.format(indent, k) if k else indent
 
             # Is there a gap in the output, if so add a '...'
             if n > 0 and n != previous_n + 1:
